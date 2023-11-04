@@ -1,30 +1,70 @@
-from fastapi import FastAPI
-from pymongo import MongoClient
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import List, Dict
+from bson import ObjectId
+from pymongo import MongoClient
 
 app = FastAPI()
-
-# Define your MongoDB client here.
-mongo_client = MongoClient("mongodb://my_fastapi_app-mongo-1:27017/")
 
 class Item(BaseModel):
     name: str
     description: str
 
+# MongoDB connection
+mongo_client = MongoClient("mongodb://my_fastapi_app-mongo-1:27017/")
+db = mongo_client["mydatabase"]
+items_collection = db["items"]
+
 @app.post("/items/", response_model=Item)
 async def create_item(item: Item):
-    # Access the "mydatabase" database from the MongoDB client.
-    db = mongo_client["mydatabase"]
-
-    # Access the "items" collection in the database.
-    items_collection = db["items"]
-
     # Insert the item data into the collection.
     inserted_item = items_collection.insert_one(item.dict())
 
-    # Return the inserted item.
     return {
         "name": item.name,
         "description": item.description,
         "_id": str(inserted_item.inserted_id)  # Convert ObjectId to string
     }
+
+@app.get("/items/", response_model=List[Item])
+async def read_items(skip: int = 0, limit: int = 10):
+    # Retrieve items from the collection with pagination.
+    items = items_collection.find().skip(skip).limit(limit)
+
+    return list(items)
+
+@app.get("/items/{item_id}", response_model=Item)
+async def read_item(item_id: str):
+    # Find the item by its ID.
+    item = items_collection.find_one({"_id": ObjectId(item_id)})
+
+    if item:
+        item["_id"] = str(item["_id"])  # Convert ObjectId to string
+        return item
+    else:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+@app.put("/items/{item_id}", response_model=Item)
+async def update_item(item_id: str, updated_item: Item):
+    # Update the item by its ID.
+    result = items_collection.update_one({"_id": ObjectId(item_id)},
+                                        {"$set": updated_item.dict()})
+
+    if result.matched_count > 0:
+        return updated_item
+    else:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+@app.delete("/items/{item_id}", response_model=Dict[str, str])
+async def delete_item(item_id: str):
+    # Delete the item by its ID.
+    result = items_collection.delete_one({"_id": ObjectId(item_id)})
+
+    if result.deleted_count > 0:
+        return {"message": "Item deleted"}
+    else:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=80)
