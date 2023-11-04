@@ -1,12 +1,11 @@
 from fastapi import FastAPI
+from pymongo import MongoClient
 from pydantic import BaseModel
-import pymongo
 
 app = FastAPI()
 
-# Define your MongoDB connection parameters
-mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
-db = mongo_client["mydatabase"]
+# Define your MongoDB client here.
+mongo_client = MongoClient("mongodb://my_fastapi_app-mongo-1:27017/")
 
 class Item(BaseModel):
     name: str
@@ -14,9 +13,18 @@ class Item(BaseModel):
 
 @app.post("/items/", response_model=Item)
 async def create_item(item: Item):
-    # Insert the item into the MongoDB collection
-    item_data = item.dict()
-    result = db.items.insert_one(item_data)
-    item_id = str(result.inserted_id)
-    
-    return {"item_id": item_id, **item.dict()}
+    # Access the "mydatabase" database from the MongoDB client.
+    db = mongo_client["mydatabase"]
+
+    # Access the "items" collection in the database.
+    items_collection = db["items"]
+
+    # Insert the item data into the collection.
+    inserted_item = items_collection.insert_one(item.dict())
+
+    # Return the inserted item.
+    return {
+        "name": item.name,
+        "description": item.description,
+        "_id": str(inserted_item.inserted_id)  # Convert ObjectId to string
+    }
