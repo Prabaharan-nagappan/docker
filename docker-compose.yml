@@ -8,9 +8,15 @@ services:
       - "8000:8000"
     depends_on:
       - mongo
+    networks:
+      - mynetwork
 
   mongo:
     image: mongo
     ports:
-      - "27017:27017"
+      - "27018:27017"
+    networks:
+      - mynetwork
 
+networks:
+  mynetwork:
