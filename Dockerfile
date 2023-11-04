@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy the requirements file into the container
 COPY requirements.txt .
 
-# Install FastAPI and Uvicorn
-RUN pip install fastapi uvicorn
+# Install FastAPI, Motor, and Uvicorn
+RUN pip install fastapi motor uvicorn
 
 # Copy your FastAPI application code into the container
 COPY app.py .
