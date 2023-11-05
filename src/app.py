@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict
@@ -6,14 +7,23 @@ from pymongo import MongoClient
 
 app = FastAPI()
 
+
+# Get the MongoDB connection URL from an environment variable
+mongo_url = os.getenv("MONGO_URL")
+
+# MongoDB connection
+mongo_client = MongoClient(mongo_url)
+db = mongo_client["mydatabase"]
+items_collection = db["items"]
+
 class Item(BaseModel):
     name: str
     description: str
+    
 
-# MongoDB connection
-mongo_client = MongoClient("mongodb://my_fastapi_app-mongo-1:27017/")
-db = mongo_client["mydatabase"]
-items_collection = db["items"]
+@app.get("/")
+def root():
+    return {"message": "Use /docs for FastAPI CRUD operations"}
 
 @app.post("/items/", response_model=Item)
 async def create_item(item: Item):
