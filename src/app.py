@@ -17,6 +17,7 @@ db = mongo_client["mydatabase"]
 items_collection = db["items"]
 
 class Item(BaseModel):
+    ID: str
     name: str
     description: str
     
@@ -40,16 +41,17 @@ async def create_item(item: Item):
 async def read_items(skip: int = 0, limit: int = 10):
     # Retrieve items from the collection with pagination.
     items = items_collection.find().skip(skip).limit(limit)
-
-    return list(items)
+    items_list = []
+    for item in items:
+        item["ID"] = str(item["_id"])  # Update "ID" field
+        items_list.append(item)
+    return items_list
 
 @app.get("/items/{item_id}", response_model=Item)
 async def read_item(item_id: str):
-    # Find the item by its ID.
     item = items_collection.find_one({"_id": ObjectId(item_id)})
-
     if item:
-        item["_id"] = str(item["_id"])  # Convert ObjectId to string
+        item["ID"] = str(item["_id"])  # Update "ID" field
         return item
     else:
         raise HTTPException(status_code=404, detail="Item not found")
