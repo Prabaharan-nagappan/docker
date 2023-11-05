@@ -6,9 +6,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - "80:80"
+    environment:
+      - MONGO_URL=mongodb://mongo:27017/
     depends_on:
       - mongo
   mongo:
     image: mongo
     ports:
-      - "27018:27017"
+      - "27017:27017"
