@@ -17,10 +17,11 @@ db = mongo_client["mydatabase"]
 items_collection = db["items"]
 
 class Item(BaseModel):
-    ID: str
     name: str
     description: str
-    
+
+class Items(Item):
+    ID: str
 
 @app.get("/")
 def root():
@@ -37,7 +38,7 @@ async def create_item(item: Item):
         "_id": str(inserted_item.inserted_id)  # Convert ObjectId to string
     }
 
-@app.get("/items/", response_model=List[Item])
+@app.get("/items/", response_model=List[Items])
 async def read_items(skip: int = 0, limit: int = 10):
     # Retrieve items from the collection with pagination.
     items = items_collection.find().skip(skip).limit(limit)
